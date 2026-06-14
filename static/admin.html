@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Admin</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container" style="max-width: 600px;">
+        <h2>Espace Administrateur</h2>
+        <button onclick="logout()" style="background-color: var(--error); margin-bottom: 1rem;">Se déconnecter</button>
+        
+        <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+            <h3>Créer un Module de formation</h3>
+            <form id="module-form">
+                <div class="form-group">
+                    <label>Titre du module</label>
+                    <input type="text" id="mod-title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="mod-desc" required>
+                </div>
+                <button type="submit">Créer le module</button>
+            </form>
+        </div>
+        <div id="message-box"></div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        document.getElementById('module-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('mod-title').value,
+                description: document.getElementById('mod-desc').value
+            };
+            try {
+                await apiCall('/admin/modules', 'POST', payload);
+                showMessage("Module créé avec succès !", "success");
+                document.getElementById('module-form').reset();
+            } catch (error) { }
+        });
+    </script>
+</body>
+</html>

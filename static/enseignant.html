@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Enseignant</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container" style="max-width: 600px;">
+        <h2>Espace Enseignant</h2>
+        <button onclick="logout()" style="background-color: var(--error); margin-bottom: 1rem;">Se déconnecter</button>
+        
+        <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-bottom: 2rem;">
+            <h3>1. Créer un Nouveau Cours</h3>
+            <form id="course-form">
+                <div class="form-group">
+                    <label>Titre du cours</label>
+                    <input type="text" id="course-title" placeholder="Ex: Introduction à Javascript" required>
+                </div>
+                <div class="form-group">
+                    <label>ID du Module global (créé par l'admin)</label>
+                    <input type="number" id="course-module-id" placeholder="Ex: 1" required>
+                </div>
+                <button type="submit">Créer le cours</button>
+            </form>
+        </div>
+
+        <div style="border-top: 1px solid var(--border); padding-top: 1rem;">
+            <h3>2. Uploader une Leçon (PDF ou MP4)</h3>
+            <form id="lesson-form">
+                <div class="form-group">
+                    <label>Titre de la leçon</label>
+                    <input type="text" id="les-title" placeholder="Ex: Utilisation de Fetch/AJAX" required>
+                </div>
+                <div class="form-group">
+                    <label>Sélectionner le Cours associé</label>
+                    <select id="les-course-id" required>
+                        <option value="">-- Chargez ou sélectionnez un cours --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fichier (Max 50Mo)</label>
+                    <input type="file" id="les-file" accept=".pdf, .mp4" required>
+                </div>
+                <button type="submit">Uploader le fichier</button>
+            </form>
+        </div>
+        <div id="message-box"></div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Fonction pour charger dynamiquement les cours créés par l'enseignant dans le sélecteur HTML
+        async function loadTeacherCourses() {
+            try {
+                const courses = await apiCall('/teacher/courses', 'GET');
+                const selectElement = document.getElementById('les-course-id');
+                
+                // On réinitialise la liste déroulante
+                selectElement.innerHTML = '<option value="">-- Choisir un cours existant --</option>';
+                
+                if (courses.length === 0) {
+                    selectElement.innerHTML = '<option value="">⚠️ Aucun cours créé. Créez-en un d\'abord.</option>';
+                    return;
+                }
+
+                courses.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.textContent = `[ID: ${course.id}] ${course.title}`;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement des cours :", error);
+            }
+        }
+
+        // Soumission du formulaire de création de cours
+        document.getElementById('course-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('course-title').value,
+                module_id: parseInt(document.getElementById('course-module-id').value)
+            };
+
+            try {
+                await apiCall('/teacher/courses', 'POST', payload);
+                showMessage("Cours créé avec succès !", "success");
+                document.getElementById('course-form').reset();
+                // On rafraîchit immédiatement la liste déroulante
+                await loadTeacherCourses();
+            } catch (error) { }
+        });
+
+        // Soumission du formulaire d'upload de leçons
+        document.getElementById('lesson-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const courseId = document.getElementById('les-course-id').value;
+            if (!courseId) {
+                showMessage("Veuillez sélectionner un cours valide !", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', document.getElementById('les-title').value);
+            formData.append('course_id', courseId);
+            formData.append('file', document.getElementById('les-file').files[0]);
+
+            try {
+                await apiCall('/teacher/lessons', 'POST', formData);
+                showMessage("Fichier uploadé et lié au cours avec succès !", "success");
+                document.getElementById('lesson-form').reset();
+            } catch (error) { }
+        });
+
+        // Charger les données dès l'ouverture de la page
+        document.addEventListener('DOMContentLoaded', loadTeacherCourses);
+    </script>
+</body>
+</html>

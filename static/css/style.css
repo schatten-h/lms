@@ -1,0 +1,170 @@
+/* --- CONFIGURATION GLOBALE --- */
+:root {
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --bg-color: #F3F4F6;
+    --card-bg: #FFFFFF;
+    --text-main: #1F2937;
+    --text-muted: #6B7280;
+    --border-color: #E5E7EB;
+    --success: #10B981;
+    --danger: #EF4444;
+    --radius: 12px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    padding: 1rem;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* --- LOGIQUE DE L'INTERFACE (HEADER & ACTIONS) --- */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.actions-bar {
+    margin-bottom: 2rem;
+}
+
+/* --- SYSTÈME DE BOUTONS --- */
+button, .btn {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:hover, .btn:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-logout {
+    background-color: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.btn-logout:hover {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-action {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+}
+
+/* --- STRUCTURE DES CARTES DE LA GRILLE --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid var(--border-color);
+}
+
+.stat-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* --- CONTRÔLES DES ÉTATS (VIDE, CHARGEMENT, ERREUR) --- */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background-color: #F9FAFB;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius);
+}
+
+.empty-state .icon {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+}
+
+.empty-state .sub-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.loading-text {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.error-text {
+    text-align: center;
+    color: var(--danger);
+    font-weight: 500;
+}
+
+/* --- STYLE DES LISTES DE DONNÉES --- */
+.data-list {
+    list-style: none;
+}
+
+.data-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-list li:last-child {
+    border-bottom: none;
+}
+
+.badge {
+    background-color: #EEF2FF;
+    color: var(--primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* --- ALERTES ET MESSAGES FLASH --- */
+#message-box {
+    display: none;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+}
+#message-box.success { background-color: #D1FAE5; color: #065F46; }
+#message-box.error { background-color: #FEE2E2; color: #991B1B; }

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS - Dashboard Étudiant</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header class="dashboard-header">
+            <h2>Mon Espace Apprentissage</h2>
+            <button onclick="logout()" class="btn-logout">Se déconnecter</button>
+        </header>
+
+        <div class="actions-bar">
+            <button id="refresh-btn">Actualiser mes données</button>
+        </div>
+
+        <div id="message-box"></div>
+
+        <div class="dashboard-grid">
+            
+            <div class="stat-card">
+                <h3>📚 Mes Cours</h3>
+                <div id="enrollments-container">
+                    <p class="loading-text">Chargement de tes cours...</p>
+                </div>
+                <div style="margin-top:1rem;">
+                    <h4>Catalogue</h4>
+                    <div id="catalogue-container">
+                        <p class="loading-text">Chargement du catalogue...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h3>🎓 Mes Certificats</h3>
+                <div id="certificates-container">
+                    <p class="loading-text">Chargement de tes succès...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    
+    <script>
+        // Fonction pour afficher les cours
+        function renderEnrollments(enrollments) {
+            const container = document.getElementById('enrollments-container');
+            
+            if (!enrollments || enrollments.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📁</div>
+                        <p>Tu n'es inscrit à aucun cours pour le moment.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let listHTML = '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+            enrollments.forEach(cours => {
+                listHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #F9FAFB; border-radius: 8px; border: 1px solid #E5E7EB;">
+                        <div>
+                            <span style="font-weight: 600; display: block;">📖 ${cours.title || 'Cours'}</span>
+                            <span style="font-size: 0.85rem; color: #6B7280;">Progression : ${cours.progress || 0}%</span>
+                        </div>
+                        <button onclick="window.location.href='/lesson?course_id=${cours.course_id}'" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Étudier</button>
+                    </div>
+                `;
+            });
+            listHTML += '</div>';
+            container.innerHTML = listHTML;
+        }
+
+        // Fonction pour afficher les certificats
+        function renderCertificates(certificates) {
+            const container = document.getElementById('certificates-container');
+            if (!certificates || certificates.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📜</div>
+                        <p>Aucun certificat obtenu pour l'instant.</p>
+                        <p style="font-size: 0.85rem; color: #6B7280; margin-top: 0.5rem;">Termine tes cours avec succès pour les débloquer !</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let listHTML = '<ul style="list-style-type: none; padding: 0;">';
+            certificates.forEach(certif => {
+                listHTML += `<li style="padding: 0.5rem 0; border-bottom: 1px solid #E5E7EB;">🏆 ${certif.module_title || 'Certificat'}</li>`;
+            });
+            listHTML += '</ul>';
+            container.innerHTML = listHTML;
+        }
+
+        // Fonction pour gérer l'inscription à un cours (Catalogue)
+        async function enrollInCourse(courseId) {
+            try {
+                const response = await apiCall(`/student/enroll/${courseId}`, 'POST');
+                showMessage(response.msg || "Inscription validée !");
+                fetchDashboardData(); // Rafraîchit l'affichage du tableau de bord
+            } catch (error) {
+                console.error("Erreur d'inscription", error);
+            }
+        }
+
+        // Fonction principale pour charger le tableau de bord
+        async function fetchDashboardData() {
+            try {
+                const data = await apiCall('/student/dashboard', 'GET'); 
+                renderEnrollments(data.enrollments);
+                renderCertificates(data.certificates);
+            } catch (error) {
+                console.error("Erreur de récupération :", error);
+            }
+        }
+
+        // Événements au chargement
+        document.getElementById('refresh-btn').addEventListener('click', fetchDashboardData);
+        document.addEventListener('DOMContentLoaded', fetchDashboardData);
+    </script>
+</body>
+</html>

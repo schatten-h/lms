@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS - Visionneuse de Cours</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .learning-container { display: flex; gap: 2rem; margin-top: 2rem; min-height: 70vh; }
+        .sidebar { width: 30%; background: white; padding: 1.5rem; border-radius: 8px; border: 1px solid #E5E7EB; }
+        .main-content { width: 70%; background: white; padding: 2rem; border-radius: 8px; border: 1px solid #E5E7EB; }
+        .lesson-item { padding: 0.75rem; border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem; border: 1px solid transparent; transition: all 0.2s; }
+        .lesson-item:hover { background: #F3F4F6; }
+        .lesson-item.active { background: #EEF2FF; border-color: #4F46E5; color: #4F46E5; font-weight: 600; }
+        .media-viewer { width: 100%; height: 500px; border-radius: 6px; border: 1px solid #E5E7EB; margin-top: 1rem; background: #F9FAFB; }
+        .quiz-section { margin-top: 2.5rem; padding-top: 2rem; border-top: 2px dashed #E5E7EB; }
+        .question-block { margin-bottom: 1.5rem; }
+        .choice-label { display: block; margin: 0.5rem 0; cursor: pointer; padding: 0.5rem; border: 1px solid #E5E7EB; border-radius: 6px; }
+        .choice-label:hover { background: #F9FAFB; }
+    </style>
+</head>
+<body>
+
+    <div class="container" style="max-width: 1200px;">
+        <header class="dashboard-header">
+            <button onclick="window.location.href='/etudiant'" class="btn-logout" style="border-color: #4F46E5; color: #4F46E5;">← Retour au tableau de bord</button>
+            <h2 id="course-page-title">Chargement du cours...</h2>
+        </header>
+
+        <div id="message-box"></div>
+
+        <div class="learning-container">
+            <aside class="sidebar">
+                <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">📖 Sommaire du cours</h3>
+                <div id="lessons-list">
+                    <p class="loading-text">Chargement des leçons...</p>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <div id="empty-lesson-view" style="text-align: center; padding-top: 5rem; color: #6B7280;">
+                    <p style="font-size: 1.2rem;">Sélectionne une leçon dans le sommaire pour commencer à apprendre. 🚀</p>
+                </div>
+
+                <div id="active-lesson-view" style="display: none;">
+                    <h3 id="lesson-title" style="font-size: 1.5rem; color: #1F2937;">Titre de la leçon</h3>
+                    
+                    <div id="media-container"></div>
+
+                    <div id="quiz-container" class="quiz-section" style="display: none;">
+                        <h4 id="quiz-title" style="color: #4F46E5; margin-bottom: 1rem;">📝 Quiz de validation</h4>
+                        <form id="quiz-form">
+                            <div id="quiz-questions"></div>
+                            <button type="submit" style="margin-top: 1rem; width: 100%;">Soumettre mes réponses</button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        let allLessons = [];
+        let activeQuizId = null;
+
+        // Récupérer le course_id depuis les paramètres de l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('course_id');
+
+        async function loadCourseContent() {
+            if (!courseId) {
+                showMessage("Aucun identifiant de cours trouvé", "error");
+                return;
+            }
+            try {
+                allLessons = await apiCall(`/student/course/${courseId}/lessons`, 'GET');
+                renderSidebar(allLessons);
+            } catch (error) {
+                document.getElementById('lessons-list').innerHTML = '<p style="color:red;">Erreur lors du chargement.</p>';
+            }
+        }
+
+        function renderSidebar(lessons) {
+            const listContainer = document.getElementById('lessons-list');
+            if (lessons.length === 0) {
+                listContainer.innerHTML = '<p class="loading-text">Aucune leçon disponible.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = lessons.map((l, index) => `
+                <div class="lesson-item" id="item-${l.id}" onclick="selectLesson(${index})">
+                    ${index + 1}. ${l.title}
+                </div>
+            `).join('');
+        }
+
+        function selectLesson(index) {
+            // Gestion visuelle de l'élément sélectionné
+            document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
+            const lesson = allLessons[index];
+            document.getElementById(`item-${lesson.id}`).classList.add('active');
+
+            // Affichage des blocs de contenu
+            document.getElementById('empty-lesson-view').style.display = 'none';
+            document.getElementById('active-lesson-view').style.display = 'block';
+            document.getElementById('lesson-title').textContent = lesson.title;
+
+            // Rendu du média (Détection PDF ou Vidéo via l'extension du fichier)
+            const mediaContainer = document.getElementById('media-container');
+            const fileUrl = lesson.file_path.startsWith('/') ? lesson.file_path : '/' + lesson.file_path;
+            
+            if (lesson.file_path.toLowerCase().endsWith('.pdf')) {
+                mediaContainer.innerHTML = `<iframe src="${fileUrl}" class="media-viewer"></iframe>`;
+            } else if (lesson.file_path.toLowerCase().endsWith('.mp4') || lesson.file_path.toLowerCase().endsWith('.mkv')) {
+                mediaContainer.innerHTML = `<video src="${fileUrl}" controls class="media-viewer"></video>`;
+            } else {
+                mediaContainer.innerHTML = `<div class="media-viewer" style="display:flex; align-items:center; justify-content:center;"><a href="${fileUrl}" target="_blank" class="btn">Ouvrir la ressource externe</a></div>`;
+            }
+
+            // Rendu du Quiz s'il existe
+            const quizContainer = document.getElementById('quiz-container');
+            if (lesson.quiz) {
+                activeQuizId = lesson.quiz.id;
+                document.getElementById('quiz-title').textContent = `📝 ${lesson.quiz.title}`;
+                quizContainer.style.display = 'block';
+                
+                const questionsContainer = document.getElementById('quiz-questions');
+                questionsContainer.innerHTML = lesson.quiz.questions.map(q => `
+                    <div class="question-block">
+                        <p style="font-weight:600; margin-bottom:0.5rem;">🔹 ${q.text}</p>
+                        ${q.choices.map(c => `
+                            <label class="choice-label">
+                                <input type="radio" name="question-${q.id}" value="${c.id}" required style="margin-right:0.5rem;">
+                                ${c.text}
+                            </label>
+                        `).join('')}
+                    </div>
+                `).join('');
+            } else {
+                quizContainer.style.display = 'none';
+                activeQuizId = null;
+            }
+        }
+
+        // Soumission du Quiz au backend Python
+        document.getElementById('quiz-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!activeQuizId) return;
+
+            const answers = [];
+            const formBlocks = document.querySelectorAll('.question-block');
+            
+            formBlocks.forEach(block => {
+                const radioChecked = block.querySelector('input[type="radio"]:checked');
+                if (radioChecked) {
+                    const questionId = parseInt(radioChecked.name.replace('question-', ''));
+                    const choiceId = parseInt(radioChecked.value);
+                    answers.push({ question_id: questionId, choice_id: choiceId });
+                }
+            });
+
+            try {
+                // Modèle attendu par ta classe Pydantic "SubmitQuiz"
+                const payload = { answers: answers };
+                const result = await apiCall(`/student/quiz/${activeQuizId}/submit`, 'POST', payload);
+                
+                if (result.passed) {
+                    showMessage(`🎉 Succès ! Score : ${result.score}% - ${result.msg}`, "success");
+                } else {
+                    showMessage(`❌ Échec... Score : ${result.score}% - ${result.msg}`, "error");
+                }
+            } catch (error) {
+                console.error("Erreur de soumission du quiz", error);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadCourseContent);
+    </script>
+</body>
+</html>
